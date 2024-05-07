@@ -40,7 +40,7 @@ public class T1_CFGBasicTest {
 
     @Test
     public void comprobarAniadirTerminalValido() throws CFGAlgorithmsException {
-        gica = new CFGAlgorithms();
+        gica = new CFGAlgorithms(); 
         gica.addTerminal('a');
     }
 
