@@ -19,6 +19,7 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
     
     private Set<Character> noTerminales = new HashSet<>();
     private Set<Character> terminales = new HashSet<>();
+    private Set<String> producciones = new HashSet<>();
 
     /**
      * Método que añade los elementos no terminales de la gramática.
@@ -41,6 +42,8 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
 
         // Añado al conjunto de noTerminales
         noTerminales.add(nonterminal);
+        
+        
     }
 
 
@@ -107,7 +110,15 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      * @throws CFGAlgorithmsException Si el elemento no pertenece a la gramática
      */
     public void removeTerminal(char terminal) throws CFGAlgorithmsException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        // Caracter en conjunto????
+        if (!terminales.contains(terminal)) {
+            throw new CFGAlgorithmsException("El elemento no pertenece a la gramática.");
+        }
+
+        terminales.remove(terminal);
+
+        //eliminamos producciones q tengan el terminal
+        producciones.removeIf(produccion -> produccion.indexOf(terminal) != -1);
     }
 
 
@@ -119,7 +130,7 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      * @return Un conjunto con los terminales definidos.
      */
     public Set<Character> getTerminals() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+         return new HashSet<>(terminales);
     }
 
 
