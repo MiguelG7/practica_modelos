@@ -4,6 +4,7 @@ import es.ceu.gisi.modcomp.gic_algorithms.exceptions.CFGAlgorithmsException;
 import es.ceu.gisi.modcomp.gic_algorithms.interfaces.*;
 import java.util.List;
 import java.util.Set;
+import java.util.HashSet;
 
 
 
@@ -15,6 +16,9 @@ import java.util.Set;
  * @author Sergio Saugar García <sergio.saugargarcia@ceu.es>
  */
 public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface, CYKInterface {
+    
+    private Set<Character> noTerminales = new HashSet<>();
+    private Set<Character> terminales = new HashSet<>();
 
     /**
      * Método que añade los elementos no terminales de la gramática.
@@ -26,6 +30,7 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      */
     public void addNonTerminal(char nonterminal) throws CFGAlgorithmsException {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        
     }
 
 
@@ -66,7 +71,19 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *                                si ya está en el conjunto.
      */
     public void addTerminal(char terminal) throws CFGAlgorithmsException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        
+        // Compruebo que sea letra minúscula
+        if (!Character.isLowerCase(terminal)) {
+            throw new CFGAlgorithmsException("UEPAAA! letra minúscula.");
+        }
+
+        // Compruebo si está repetida
+        if (terminales.contains(terminal)) {
+            throw new CFGAlgorithmsException("UEPAAA! El elemento ya está en el conjunto.");
+        }
+
+        // Añadir el carácter al conjunto
+        terminales.add(terminal);
     }
 
 
