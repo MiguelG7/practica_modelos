@@ -5,6 +5,10 @@ import es.ceu.gisi.modcomp.gic_algorithms.interfaces.*;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
+
+import java.util.ArrayList;
 
 
 
@@ -19,7 +23,7 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
     
     private Set<Character> noTerminales = new HashSet<>();
     private Set<Character> terminales = new HashSet<>();
-    private Set<String> producciones = new HashSet<>();
+    private Map<Character, Set<String>> producciones = new HashMap<>();
     private Character simboloInicio;
 
     /**
@@ -67,7 +71,9 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
         noTerminales.remove(nonterminal);
 
         //eliminamos producciones q tengan el terminal
-        producciones.removeIf(produccion -> produccion.indexOf(nonterminal) != -1);
+        for (Set<String> prods : producciones.values()) {
+            prods.removeIf(produccion -> produccion.indexOf(nonterminal) != -1);
+        }
     }
 
 
@@ -101,10 +107,8 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
 
         // Compruebo si está repetida
         if (terminales.contains(terminal)) {
-            throw new CFGAlgorithmsException("UEPAAA! El elemento ya está en el conjunto.");
+            throw new CFGAlgorithmsException("UEPAAA! El elemento ya está en el conjunto");
         }
-
-        // Añadir el carácter al conjunto
         terminales.add(terminal);
     }
 
@@ -121,13 +125,15 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
     public void removeTerminal(char terminal) throws CFGAlgorithmsException {
         // Caracter en conjunto????
         if (!terminales.contains(terminal)) {
-            throw new CFGAlgorithmsException("El elemento no pertenece a la gramática.");
+            throw new CFGAlgorithmsException("El elemento no pertenece a la gramátic");
         }
 
         terminales.remove(terminal);
 
         //eliminamos producciones q tengan el terminal
-        producciones.removeIf(produccion -> produccion.indexOf(terminal) != -1);
+        for (Set<String> prods : producciones.values()) {
+            prods.removeIf(produccion -> produccion.indexOf(terminal) != -1);
+        }
     }
 
 
@@ -156,7 +162,7 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
     public void setStartSymbol(char nonterminal) throws CFGAlgorithmsException {
         // Ver si pertenece a no terminales
         if (!noTerminales.contains(nonterminal)) {
-            throw new CFGAlgorithmsException("El elemento no forma parte del conjunto de elementos no terminales.");
+            throw new CFGAlgorithmsException("El elemento no forma parte del conjunto de los no terminales");
         }
 
         simboloInicio = nonterminal;
@@ -173,9 +179,8 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *                                establecido.
      */
     public Character getStartSymbol() throws CFGAlgorithmsException {
-        // Miro si existe
         if (simboloInicio == null) {
-            throw new CFGAlgorithmsException("El axioma todavía no ha sido establecido.");
+            throw new CFGAlgorithmsException("El axioma todavía no existe.");
         }
         
         return simboloInicio;
@@ -196,7 +201,16 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *                                (terminales o no terminales) no definidos previamente.
      */
     public void addProduction(char nonterminal, String production) throws CFGAlgorithmsException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+
+       if (!noTerminales.contains(nonterminal)) {
+            throw new CFGAlgorithmsException("El no terminal no forma parte del conjunto de no terminales.");
+        }
+        for (int i = 0; i < production.length(); i++) {
+            char c = production.charAt(i);
+            if (c != 'l' && !terminales.contains(c) && !noTerminales.contains(c)) {
+                throw new CFGAlgorithmsException("La producción tiene elementos que no existen.");
+            }
+        }
     }
 
 
@@ -213,7 +227,20 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *                                elemento no terminal.
      */
     public boolean removeProduction(char nonterminal, String production) throws CFGAlgorithmsException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        if (!noTerminales.contains(nonterminal)) {
+            throw new CFGAlgorithmsException("El no terminal no está en el conjunto de no terminales.");
+        }
+
+        if (!producciones.containsKey(nonterminal) || !producciones.get(nonterminal).contains(production)) {
+            throw new CFGAlgorithmsException("La producción no pertenece a ese elemento no terminal.");
+        }
+
+        boolean eliminado = producciones.get(nonterminal).remove(production);
+
+        if (eliminado && producciones.get(nonterminal).isEmpty()) {
+            producciones.remove(nonterminal);
+        }
+        return eliminado;
     }
 
 
@@ -229,7 +256,7 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *         derecha de cada producción
      */
     public List<String> getProductions(char nonterminal) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        return new ArrayList<>(producciones.getOrDefault(nonterminal, new HashSet<>()));
     }
 
 
