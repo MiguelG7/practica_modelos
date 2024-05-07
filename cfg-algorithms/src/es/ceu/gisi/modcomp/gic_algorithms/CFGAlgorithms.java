@@ -20,6 +20,7 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
     private Set<Character> noTerminales = new HashSet<>();
     private Set<Character> terminales = new HashSet<>();
     private Set<String> producciones = new HashSet<>();
+    private Character simboloInicio;
 
     /**
      * Método que añade los elementos no terminales de la gramática.
@@ -58,7 +59,15 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      * @throws CFGAlgorithmsException Si el elemento no pertenece a la gramática
      */
     public void removeNonTerminal(char nonterminal) throws CFGAlgorithmsException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        // Caracter en conjunto????
+        if (!noTerminales.contains(nonterminal)) {
+            throw new CFGAlgorithmsException("El elemento no pertenece a la gramática.");
+        }
+
+        noTerminales.remove(nonterminal);
+
+        //eliminamos producciones q tengan el terminal
+        producciones.removeIf(produccion -> produccion.indexOf(nonterminal) != -1);
     }
 
 
@@ -70,7 +79,7 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      * @return Un conjunto con los no terminales definidos.
      */
     public Set<Character> getNonTerminals() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        return new HashSet<>(noTerminales);
     }
 
 
@@ -145,7 +154,12 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *                                del conjunto de elementos no terminales.
      */
     public void setStartSymbol(char nonterminal) throws CFGAlgorithmsException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        // Ver si pertenece a no terminales
+        if (!noTerminales.contains(nonterminal)) {
+            throw new CFGAlgorithmsException("El elemento no forma parte del conjunto de elementos no terminales.");
+        }
+
+        simboloInicio = nonterminal;
     }
 
 
@@ -159,7 +173,12 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *                                establecido.
      */
     public Character getStartSymbol() throws CFGAlgorithmsException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        // Miro si existe
+        if (simboloInicio == null) {
+            throw new CFGAlgorithmsException("El axioma todavía no ha sido establecido.");
+        }
+        
+        return simboloInicio;
     }
 
 
