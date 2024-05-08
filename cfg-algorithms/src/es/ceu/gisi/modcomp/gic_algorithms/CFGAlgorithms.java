@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Collections;
 
 import java.util.ArrayList;
 
@@ -207,7 +208,7 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
         }
         for (int i = 0; i < production.length(); i++) {
             char c = production.charAt(i);
-            if (!terminales.contains(c) && !noTerminales.contains(c)) {
+            if (c!='l' && !terminales.contains(c) && !noTerminales.contains(c)) {
                 throw new CFGAlgorithmsException("La producción tiene elementos que no existen.");
             }
         }
@@ -227,13 +228,10 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *                                elemento no terminal.
      */
     public boolean removeProduction(char nonterminal, String production) throws CFGAlgorithmsException {
-        if (!noTerminales.contains(nonterminal)) {
-            throw new CFGAlgorithmsException("El no terminal no está en el conjunto de no terminales.");
+        if(!producciones.containsKey(nonterminal)){
+            throw new CFGAlgorithmsException("El no terminal no tiene producciones asociadas.");           
         }
-
-        if (!producciones.containsKey(nonterminal) || !producciones.get(nonterminal).contains(production)) {
-            throw new CFGAlgorithmsException("La producción no pertenece a ese elemento no terminal.");
-        }
+        
 
         boolean eliminado = producciones.get(nonterminal).remove(production);
 
@@ -275,7 +273,28 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *         POR ORDEN ALFABÉTICO.
      */
     public String getProductionsToString(char nonterminal) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        
+        if (!producciones.containsKey(nonterminal)) {
+            return nonterminal + "::=";
+        }
+        Set<String> productionSet = producciones.get(nonterminal);
+
+        List<String> productionList = new ArrayList<>(productionSet);
+
+        // Ordena alfabéticamente
+        Collections.sort(productionList);
+
+        // Creamos salida final
+        StringBuilder result = new StringBuilder(nonterminal + "::=");
+
+        // Unimos las prods separadas con "|"
+        for (int i = 0; i < productionList.size(); i++) {
+            if (i > 0) {
+                result.append("|");
+            }
+            result.append(productionList.get(i));
+        }
+        return result.toString();
     }
 
 
