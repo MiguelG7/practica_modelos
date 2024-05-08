@@ -207,7 +207,7 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
         }
         for (int i = 0; i < production.length(); i++) {
             char c = production.charAt(i);
-            if (c != 'l' && !terminales.contains(c) && !noTerminales.contains(c)) {
+            if (!terminales.contains(c) && !noTerminales.contains(c)) {
                 throw new CFGAlgorithmsException("La producción tiene elementos que no existen.");
             }
         }
