@@ -204,14 +204,16 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
     public void addProduction(char nonterminal, String production) throws CFGAlgorithmsException {
 
        if (!noTerminales.contains(nonterminal)) {
-            throw new CFGAlgorithmsException("El no terminal no forma parte del conjunto de no terminales.");
+            throw new CFGAlgorithmsException("El no terminal no forma parte del conjunto de no terminales");
         }
         for (int i = 0; i < production.length(); i++) {
             char c = production.charAt(i);
             if (c!='l' && !terminales.contains(c) && !noTerminales.contains(c)) {
-                throw new CFGAlgorithmsException("La producción tiene elementos que no existen.");
+                throw new CFGAlgorithmsException("La producción tiene elementos que no existen");
             }
         }
+        producciones.putIfAbsent(nonterminal, new HashSet<>());  // Asegura que hay un conjunto para ese no terminal
+        producciones.get(nonterminal).add(production);  // Añade la producción al conjunto
     }
 
 
@@ -228,16 +230,24 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *                                elemento no terminal.
      */
     public boolean removeProduction(char nonterminal, String production) throws CFGAlgorithmsException {
-        if(!producciones.containsKey(nonterminal)){
-            throw new CFGAlgorithmsException("El no terminal no tiene producciones asociadas.");           
+        if (!noTerminales.contains(nonterminal)) {
+            throw new CFGAlgorithmsException("El no terminal no está en la gramática");
         }
-        
 
-        boolean eliminado = producciones.get(nonterminal).remove(production);
+        // Metodo de busqueda invertido que nos dijo Saugar
+        Set<String> prodSet = producciones.get(nonterminal);
+        if (prodSet == null || !prodSet.contains(production)) {
+            throw new CFGAlgorithmsException("La producción no pertenece a ese no terminal (remove prod)");
+        }
 
-        if (eliminado && producciones.get(nonterminal).isEmpty()) {
+        // Intenta eliminar la producción del conjunto
+        boolean eliminado = prodSet.remove(production);
+
+        // Verifica si el conjunto de producciones ha quedado vacío y elimina el no terminal del mapa si es necesario
+        if (eliminado && prodSet.isEmpty()) {
             producciones.remove(nonterminal);
         }
+
         return eliminado;
     }
 
