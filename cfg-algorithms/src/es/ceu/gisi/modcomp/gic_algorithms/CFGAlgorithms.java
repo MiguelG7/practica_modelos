@@ -37,20 +37,16 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *                                si ya está en el conjunto.
      */
     public void addNonTerminal(char nonterminal) throws CFGAlgorithmsException {
-        // Compruebo que sea letra mayúscula
         if (!Character.isUpperCase(nonterminal)) {
             throw new CFGAlgorithmsException("Compruebo que sea mayúscula");
         }
 
-        // Compruebo si está repetida
         if (noTerminales.contains(nonterminal)) {
             throw new CFGAlgorithmsException("UEPAAA! El elemento ya está en el conjunto.");
         }
 
-        // Añado al conjunto de noTerminales
         noTerminales.add(nonterminal);
-        
-        
+          
     }
 
 
@@ -101,13 +97,11 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *                                si ya está en el conjunto.
      */
     public void addTerminal(char terminal) throws CFGAlgorithmsException {
-        
-        // Compruebo que sea letra minúscula
+
         if (!Character.isLowerCase(terminal)) {
             throw new CFGAlgorithmsException("UEPAAA! letra minúscula.");
         }
 
-        // Compruebo si está repetida
         if (terminales.contains(terminal)) {
             throw new CFGAlgorithmsException("UEPAAA! El elemento ya está en el conjunto");
         }
@@ -250,7 +244,6 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
             throw new CFGAlgorithmsException("La producción no pertenece a ese no terminal (remove prod)");
         }
 
-        // Intenta eliminar la producción del conjunto
         boolean eliminado = prodSet.remove(production);
 
         // Verifica si el conjunto de producciones ha quedado vacío y elimina el no terminal del mapa si es necesario
