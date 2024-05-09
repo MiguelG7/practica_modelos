@@ -497,7 +497,19 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *                                previamente.
      */
     public void checkCNFProduction(char nonterminal, String production) throws CFGAlgorithmsException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        if (!noTerminales.contains(nonterminal)) {
+            throw new CFGAlgorithmsException("EL no terminal no definido");
+        }
+        // A ::= a !!!!!!!!!!!!!!!!!!!!!!!!!!1
+        if (production.length() == 1 && terminales.contains(production.charAt(0))) {
+            return; 
+            
+        }
+        // A ::= BC !!!!!!!!!!!!!!!!!!!!!!!!!
+        if (production.length() == 2 && noTerminales.contains(production.charAt(0)) && noTerminales.contains(production.charAt(1))) {
+            return;  
+        }
+        throw new CFGAlgorithmsException("Producción no se ajusta a la CNF");
     }
 
 
@@ -510,7 +522,22 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      * @return true Si la gramática está en Forma Normal de Chomsky
      */
     public boolean isCNF() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        for (Map.Entry<Character, Set<String>> entry : producciones.entrySet()) {
+            for (String prod : entry.getValue()) {
+                // Acepta S :: = l si lambda si es la unica prod
+                if (prod.equals("l") && entry.getKey().equals(simboloInicio) && entry.getValue().size() == 1) {
+                    continue;
+                }
+                if (prod.length() == 1 && terminales.contains(prod.charAt(0))) {
+                    continue;
+                }
+                if (prod.length() == 2 && noTerminales.contains(prod.charAt(0)) && noTerminales.contains(prod.charAt(1))) {
+                    continue;
+                }
+                return false;
+            }
+        }
+        return true;
     }
 
 
