@@ -213,7 +213,16 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
             }
         }
         producciones.putIfAbsent(nonterminal, new HashSet<>());  // Asegura que hay un conjunto para ese no terminal
-        producciones.get(nonterminal).add(production);  // Añade la producción al conjunto
+        
+        //buscador invertido que nos recomendo Saugar
+        Set<String> prodSet = producciones.get(nonterminal);
+        //uso del buscador
+        if (prodSet.contains(production)){
+            throw new CFGAlgorithmsException("La prod ya existe este no terminal");
+        }
+        prodSet.add(production);  // Añade la producción al conjunto
+        
+        
     }
 
 
@@ -284,17 +293,16 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      */
     public String getProductionsToString(char nonterminal) {
         
-        if (!producciones.containsKey(nonterminal)) {
-            return nonterminal + "::=";
+        //primero comprobamos si el no terminal tiene producciones para hacer el return vacio en caso de que lo esté y no dar un tostring con un mala estructura
+        if (!producciones.containsKey(nonterminal) || producciones.get(nonterminal).isEmpty()) {
+            return "";
         }
         Set<String> productionSet = producciones.get(nonterminal);
 
         List<String> productionList = new ArrayList<>(productionSet);
 
-        // Ordena alfabéticamente
         Collections.sort(productionList);
 
-        // Creamos salida final
         StringBuilder result = new StringBuilder(nonterminal + "::=");
 
         // Unimos las prods separadas con "|"
@@ -304,7 +312,9 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
             }
             result.append(productionList.get(i));
         }
+        
         return result.toString();
+
     }
 
 
@@ -317,7 +327,19 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *         los elementos no terminales ORDENADOS POR ORDEN ALFABÉTICO.
      */
     public String getGrammar() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        StringBuilder grammar = new StringBuilder();
+        
+        List<Character> noTerminalesOrdenados = new ArrayList<>(noTerminales);
+        Collections.sort(noTerminalesOrdenados);
+        for (Character nonTerminal : noTerminalesOrdenados){
+            grammar.append(nonTerminal).append(" ::= ");
+            
+            List<String> produccionesOrdenadas = new ArrayList<>(producciones.get(nonTerminal));
+            Collections.sort(produccionesOrdenadas);
+            grammar.append(String.join(" | ", produccionesOrdenadas));
+            grammar.append("\n");
+        }
+        return grammar.toString();
     }
 
 
@@ -328,7 +350,10 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      * dejando el algoritmo listo para volver a insertar una gramática nueva.
      */
     public void deleteGrammar() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        noTerminales.clear();
+        terminales.clear();
+        producciones.clear();
+        simboloInicio = null;
     }
 
 
@@ -340,7 +365,14 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      * @return true Si la gramática es una gramática independiente del contexto.
      */
     public boolean isCFG() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+         for (Map.Entry<Character, Set<String>> entry : producciones.entrySet()) {
+        // solo debe tener unn no terminal como clave
+        if (!noTerminales.contains(entry.getKey())) {
+            return false;
+// Si hay alguna clave que no es no terminal no es CFG
+        }
+    }
+    return true;
     }
 
 
