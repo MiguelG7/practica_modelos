@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Collections;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 
 
@@ -384,9 +385,18 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      * @return True si contiene ese tipo de reglas
      */
     public boolean hasUselessProductions() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
+        for (Map.Entry<Character, Set<String>> entry : producciones.entrySet()) {
+            char nonTerminal = entry.getKey();
+            Set<String> productionSet = entry.getValue();
 
+            // Verificar si alguna producción en el conjunto es igual al símbolo no terminal
+            if (productionSet.contains(String.valueOf(nonTerminal))) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
 
 
     /**
