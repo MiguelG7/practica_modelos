@@ -400,7 +400,17 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *         eliminadas.
      */
     public List<String> removeUselessProductions() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        List<String> removedProductions = new ArrayList<>();
+        for (Character nonTerminal : new HashSet<>(producciones.keySet())) {
+            Set<String> productions = producciones.get(nonTerminal);
+            if (productions.remove(nonTerminal.toString())) {
+                removedProductions.add(nonTerminal + "::=" + nonTerminal);
+            }
+            if (productions.isEmpty()) {
+                producciones.remove(nonTerminal);
+            }
+        }
+        return removedProductions;
     }
 
 
@@ -412,8 +422,61 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *         terminales eliminados.
      */
     public List<Character> removeUselessSymbols() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
+        
+        Set<Character> reachable = new HashSet<>();
+        Set<Character> productive = new HashSet<>();
+        
+        for (Map.Entry<Character, Set<String>> entry : producciones.entrySet()) {
+            for (String production : entry.getValue()) {
+                if (production.length() == 1 && terminales.contains(production.charAt(0))) {
+                    productive.add(entry.getKey());
+                }
+            }
+        }
+
+        boolean changed;
+        do {
+            changed = false;
+            for (Map.Entry<Character, Set<String>> entry : producciones.entrySet()) {
+                if (!productive.contains(entry.getKey())) {
+                    for (String production : entry.getValue()) {
+                        if (production.chars().allMatch(c -> productive.contains((char) c) || terminales.contains((char) c))) {
+                            productive.add(entry.getKey());
+                            changed = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        } while (changed);
+
+        Set<Character> toVisit = new HashSet<>();
+        toVisit.add(simboloInicio);
+        while (!toVisit.isEmpty()) {
+            Character current = toVisit.iterator().next();
+            toVisit.remove(current);
+            reachable.add(current);
+            for (String prod : producciones.getOrDefault(current, Collections.emptySet())) {
+                prod.chars().filter(Character::isUpperCase).forEach(c -> {
+                    if (!reachable.contains((char) c)) {
+                        toVisit.add((char) c);
+                    }
+                });
+            }
+        }
+
+        List<Character> removed = new ArrayList<>();
+        Set<Character> toRemove = new HashSet<>(noTerminales);
+        toRemove.removeAll(productive);
+        toRemove.removeAll(reachable);
+        for (Character c : toRemove) {
+            noTerminales.remove(c);
+            producciones.remove(c);
+            removed.add(c);
+        }
+        return removed;
+}
+
 
 
 
@@ -425,7 +488,14 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      * @return True si contiene ese tipo de reglas
      */
     public boolean hasLambdaProductions() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        for (Map.Entry<Character, Set<String>> entry : producciones.entrySet()) {
+            if (!entry.getKey().equals(simboloInicio) || entry.getValue().size() > 1) {
+                if (entry.getValue().contains("l")) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
 
@@ -440,7 +510,16 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *         generativas y han sido tratadas.
      */
     public List<Character> removeLambdaProductions() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        List<Character> modifiedNonTerminals = new ArrayList<>();
+        for (Map.Entry<Character, Set<String>> entry : new HashMap<>(producciones).entrySet()) {
+            if (entry.getValue().remove("l")) {
+                modifiedNonTerminals.add(entry.getKey());
+                if (entry.getValue().isEmpty()) {
+                    producciones.remove(entry.getKey());
+                }
+            }
+        }
+        return modifiedNonTerminals;
     }
 
 
@@ -452,7 +531,14 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      * @return True si contiene ese tipo de reglas
      */
     public boolean hasUnitProductions() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        for (Map.Entry<Character, Set<String>> entry : producciones.entrySet()) {
+        for (String prod : entry.getValue()) {
+            if (prod.length() == 1 && noTerminales.contains(prod.charAt(0))) {
+                return true;
+            }
+        }
+        }
+        return false;
     }
 
 
@@ -464,7 +550,22 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *         por cada producción), con todas las reglas unitarias eliminadas.
      */
     public List<String> removeUnitProductions() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        List<String> removedUnitProductions = new ArrayList<>();
+        Set<Character> alreadyProcessed = new HashSet<>();
+        for (Character nonterminal : new HashSet<>(producciones.keySet())) {
+            Set<String> unitProds = producciones.get(nonterminal);
+            for (String prod : new HashSet<>(unitProds)) {
+                if (prod.length() == 1 && noTerminales.contains(prod.charAt(0)) && !alreadyProcessed.contains(prod.charAt(0))) {
+                    removedUnitProductions.add(nonterminal + "::=" + prod);
+                    unitProds.remove(prod);
+                    alreadyProcessed.add(prod.charAt(0));
+                }
+            }
+            if (unitProds.isEmpty()) {
+                producciones.remove(nonterminal);
+            }
+        }
+        return removedUnitProductions;
     }
 
 
@@ -478,7 +579,10 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      * - 4. Elimina los símbolo inútiles.
      */
     public void transformToWellFormedGrammar() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        removeUselessProductions();
+        removeLambdaProductions();
+        removeUnitProductions();
+        removeUselessSymbols();
     }
 
 
@@ -523,18 +627,24 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      */
     public boolean isCNF() {
         for (Map.Entry<Character, Set<String>> entry : producciones.entrySet()) {
+            
+            if (entry.getKey().equals(simboloInicio)) {
+                if (entry.getValue().contains("l") && entry.getValue().size() > 1) {
+                    return false; 
+                }
+            }
+
             for (String prod : entry.getValue()) {
-                // Acepta S :: = l si lambda si es la unica prod
                 if (prod.equals("l") && entry.getKey().equals(simboloInicio) && entry.getValue().size() == 1) {
                     continue;
                 }
                 if (prod.length() == 1 && terminales.contains(prod.charAt(0))) {
-                    continue;
+                    continue; 
                 }
                 if (prod.length() == 2 && noTerminales.contains(prod.charAt(0)) && noTerminales.contains(prod.charAt(1))) {
-                    continue;
+                    continue; 
                 }
-                return false;
+                return false; 
             }
         }
         return true;
