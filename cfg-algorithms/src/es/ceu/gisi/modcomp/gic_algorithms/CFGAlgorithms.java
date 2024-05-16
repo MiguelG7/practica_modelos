@@ -511,18 +511,49 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      */
     public List<Character> removeLambdaProductions() {
         List<Character> modifiedNonTerminals = new ArrayList<>();
-        for (Map.Entry<Character, Set<String>> entry : new HashMap<>(producciones).entrySet()) {
-            if (entry.getValue().remove("l")) {
-                modifiedNonTerminals.add(entry.getKey());
-                if (entry.getValue().isEmpty()) {
-                    producciones.remove(entry.getKey());
+            Set<Character> lambdaProducingNonTerminals = new HashSet<>();
+
+            // Identificar todos los no terminales que producen lambda directamente
+            for (Map.Entry<Character, Set<String>> entry : new HashMap<>(producciones).entrySet()) {
+                if (entry.getValue().remove("l")) {
+                    lambdaProducingNonTerminals.add(entry.getKey());
+                    modifiedNonTerminals.add(entry.getKey());
+                    if (entry.getValue().isEmpty()) {
+                        producciones.remove(entry.getKey());
+                    }
                 }
             }
-        }
-        return modifiedNonTerminals;
+
+            // actualizar todas las producciones que incluyen esos no terminales
+            for (Map.Entry<Character, Set<String>> entry : producciones.entrySet()) {
+                Set<String> newProductions = new HashSet<>();
+                for (String production : entry.getValue()) {
+                    // x prod --> generar nuevas producciones omitiendo los no terminales que pueden ser eliminados
+                    Set<String> combinations = generateCombinations(production, lambdaProducingNonTerminals);
+                    newProductions.addAll(combinations);
+                }
+                entry.getValue().addAll(newProductions);
+            }
+
+            return modifiedNonTerminals;
     }
 
+    // Método auxiliar para generar todas las combinaciones de una producción omitiendo ciertos no terminales
+    private Set<String> generateCombinations(String production, Set<Character> removableNonTerminals) {
+        Set<String> combinations = new HashSet<>();
+        combinations.add(production);  // Agregar la producción original
 
+        for (int i = 0; i < production.length(); i++) {
+            if (removableNonTerminals.contains(production.charAt(i))) {
+                // Para cada caracter que puede ser eliminado, generar nuevas versiones de la producción sin ese caracter
+                String withoutChar = production.substring(0, i) + production.substring(i + 1);
+                combinations.add(withoutChar);
+                combinations.addAll(generateCombinations(withoutChar, removableNonTerminals));
+            }
+        }
+
+        return combinations;
+    }
 
     /**
      * Método que comprueba si la gramática almacenada tiene reglas unitarias
