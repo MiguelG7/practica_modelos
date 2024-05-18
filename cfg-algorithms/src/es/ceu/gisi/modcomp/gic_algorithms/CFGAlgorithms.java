@@ -516,6 +516,22 @@ public List<Character> removeLambdaProductions() {
             }
         }
     }
+    
+    boolean changes = true;
+    while (changes) {
+        changes = false;
+        for (Map.Entry<Character, Set<String>> entry : new HashMap<>(producciones).entrySet()) {
+            for (String production : entry.getValue()) {
+                if (production.chars().allMatch(c -> lambdaProducingNonTerminals.contains((char) c))) {
+                    if (!lambdaProducingNonTerminals.contains(entry.getKey())) {
+                        lambdaProducingNonTerminals.add(entry.getKey());
+                        modifiedNonTerminals.add(entry.getKey());
+                        changes = true;
+                    }
+                }
+            }
+        }
+    }
 
     // aactualizar todas las producciones que incluyen estos no terminales
     for (Character nonTerminal : new HashSet<>(producciones.keySet())) {
