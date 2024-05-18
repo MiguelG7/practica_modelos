@@ -10,7 +10,9 @@ import java.util.Map;
 import java.util.Collections;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Objects;
+import java.util.Queue;
 
 
 
@@ -602,21 +604,52 @@ private Set<String> generateCombinations(String production, Set<Character> remov
      */
     public List<String> removeUnitProductions() {
         List<String> removedUnitProductions = new ArrayList<>();
-        Set<Character> alreadyProcessed = new HashSet<>();
-        for (Character nonterminal : new HashSet<>(producciones.keySet())) {
-            Set<String> unitProds = producciones.get(nonterminal);
-            for (String prod : new HashSet<>(unitProds)) {
-                if (prod.length() == 1 && noTerminales.contains(prod.charAt(0)) && !alreadyProcessed.contains(prod.charAt(0))) {
-                    removedUnitProductions.add(nonterminal + "::=" + prod);
-                    unitProds.remove(prod);
-                    alreadyProcessed.add(prod.charAt(0));
+        Map<Character, Set<String>> newProductions = new HashMap<>();
+
+    // Inicializar el nuevo mapa de producciones
+        for (Character nonTerminal : producciones.keySet()) {
+            newProductions.put(nonTerminal, new HashSet<>(producciones.get(nonTerminal)));
+        }
+
+    // Encontrar y procesar todas las reglas unitarias
+    for (Character nonTerminal : producciones.keySet()) {
+        Queue<Character> queue = new LinkedList<>();
+        Set<Character> visited = new HashSet<>();
+
+        queue.add(nonTerminal);
+        visited.add(nonTerminal);
+
+        while (!queue.isEmpty()) {
+            Character current = queue.poll();
+            for (String production : producciones.getOrDefault(current, Collections.emptySet())) {
+                if (production.length() == 1 && noTerminales.contains(production.charAt(0))) {
+                    // Es una producción unitaria
+                    Character unitTarget = production.charAt(0);
+                    if (!visited.contains(unitTarget)) {
+                        queue.add(unitTarget);
+                        visited.add(unitTarget);
+                    }
+                    removedUnitProductions.add(current + "::=" + production);
+                } else {
+                    // Es una producción regular, añadirla al no terminal original
+                    newProductions.get(nonTerminal).add(production);
                 }
             }
-            if (unitProds.isEmpty()) {
-                producciones.remove(nonterminal);
-            }
         }
-        return removedUnitProductions;
+    }
+
+    // Eliminar las reglas unitarias del mapa de producciones original
+    for (Character nonTerminal : producciones.keySet()) {
+        Set<String> updatedProductions = new HashSet<>(newProductions.get(nonTerminal));
+        updatedProductions.removeIf(prod -> prod.length() == 1 && noTerminales.contains(prod.charAt(0)));
+        newProductions.put(nonTerminal, updatedProductions);
+    }
+
+    // Actualizar el mapa de producciones
+    producciones.clear();
+    producciones.putAll(newProductions);
+
+    return removedUnitProductions;
     }
 
 
