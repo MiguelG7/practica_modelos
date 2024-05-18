@@ -286,22 +286,24 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *         POR ORDEN ALFABÉTICO.
      */
 
-public String getProductionsToString(char nonterminal) {
-    if (!producciones.containsKey(nonterminal) || producciones.get(nonterminal).isEmpty()) {
-        return nonterminal + "::=";
-    }
-    Set<String> productionSet = producciones.get(nonterminal);
-    List<String> productionList = new ArrayList<>(productionSet);
-    Collections.sort(productionList);
-    StringBuilder result = new StringBuilder(nonterminal + "::=");
-    for (int i = 0; i < productionList.size(); i++) {
-        if (i > 0) {
-            result.append("|");
+    public String getProductionsToString(char nonterminal) {
+        if (!producciones.containsKey(nonterminal) || producciones.get(nonterminal).isEmpty()) {
+            return "";  // Return an empty string if no productions exist
         }
-        result.append(productionList.get(i));
+        Set<String> productionSet = producciones.get(nonterminal);
+        List<String> productionList = new ArrayList<>(productionSet);
+        Collections.sort(productionList);
+        StringBuilder result = new StringBuilder(nonterminal + "::=");
+        for (int i = 0; i < productionList.size(); i++) {
+            if (i > 0) {
+                result.append("|");
+            }
+            result.append(productionList.get(i));
+        }
+        return result.toString();
     }
-    return result.toString();
-}
+
+
 
 
 
@@ -341,7 +343,6 @@ public String getProductionsToString(char nonterminal) {
         producciones.clear();
         simboloInicio = null;
     }
-
 
 
     /**
