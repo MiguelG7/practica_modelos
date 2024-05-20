@@ -288,22 +288,32 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *         POR ORDEN ALFABÉTICO.
      */
 
-    public String getProductionsToString(char nonterminal) {
-        if (!producciones.containsKey(nonterminal) || producciones.get(nonterminal).isEmpty()) {
-            return "";  // Return an empty string if no productions exist
-        }
-        Set<String> productionSet = producciones.get(nonterminal);
-        List<String> productionList = new ArrayList<>(productionSet);
-        Collections.sort(productionList);
-        StringBuilder result = new StringBuilder(nonterminal + "::=");
-        for (int i = 0; i < productionList.size(); i++) {
-            if (i > 0) {
-                result.append("|");
-            }
-            result.append(productionList.get(i));
-        }
-        return result.toString();
+public String getProductionsToString(char nonterminal) {
+    if (!producciones.containsKey(nonterminal) || producciones.get(nonterminal).isEmpty()) {
+        System.out.println("No hay producciones para: " + nonterminal);
+        return "";  // Retorna un string vacío si no existen producciones
     }
+    Set<String> productionSet = producciones.get(nonterminal);
+    List<String> productionList = new ArrayList<>(productionSet);
+    Collections.sort(productionList);
+    StringBuilder result = new StringBuilder(nonterminal + "::=");
+
+    // Debug: Mostrar las producciones antes de ser formateadas
+    System.out.println("Producciones no ordenadas para " + nonterminal + ": " + productionSet);
+    System.out.println("Producciones ordenadas para " + nonterminal + ": " + productionList);
+
+    for (int i = 0; i < productionList.size(); i++) {
+        if (i > 0) {
+            result.append("|");
+        }
+        result.append(productionList.get(i));
+    }
+
+    // Debug: Mostrar el resultado final de la cadena de producciones
+    System.out.println("Cadena final de producciones para " + nonterminal + ": " + result.toString());
+
+    return result.toString();
+}
 
 
 
@@ -417,61 +427,79 @@ public class CFGAlgorithms implements CFGInterface, WFCFGInterface, CNFInterface
      *         terminales eliminados.
      */
     public List<Character> removeUselessSymbols() {
-        
-        Set<Character> reachable = new HashSet<>();
-        Set<Character> productive = new HashSet<>();
-        
+    System.out.println("Iniciando removeUselessSymbols...");
+
+    Set<Character> reachable = new HashSet<>();
+    Set<Character> productive = new HashSet<>();
+
+    // Detectar símbolos productivos
+    for (Map.Entry<Character, Set<String>> entry : producciones.entrySet()) {
+        for (String production : entry.getValue()) {
+            if (production.length() == 1 && terminales.contains(production.charAt(0))) {
+                productive.add(entry.getKey());
+            }
+        }
+    }
+    System.out.println("Símbolos productivos iniciales: " + productive);
+
+    boolean changed;
+    do {
+        changed = false;
         for (Map.Entry<Character, Set<String>> entry : producciones.entrySet()) {
-            for (String production : entry.getValue()) {
-                if (production.length() == 1 && terminales.contains(production.charAt(0))) {
-                    productive.add(entry.getKey());
-                }
-            }
-        }
-
-        boolean changed;
-        do {
-            changed = false;
-            for (Map.Entry<Character, Set<String>> entry : producciones.entrySet()) {
-                if (!productive.contains(entry.getKey())) {
-                    for (String production : entry.getValue()) {
-                        if (production.chars().allMatch(c -> productive.contains((char) c) || terminales.contains((char) c))) {
-                            productive.add(entry.getKey());
-                            changed = true;
-                            break;
-                        }
+            if (!productive.contains(entry.getKey())) {
+                for (String production : entry.getValue()) {
+                    if (production.chars().allMatch(c -> productive.contains((char) c) || terminales.contains((char) c))) {
+                        productive.add(entry.getKey());
+                        changed = true;
+                        break;
                     }
                 }
             }
-        } while (changed);
-
-        Set<Character> toVisit = new HashSet<>();
-        toVisit.add(simboloInicio);
-        while (!toVisit.isEmpty()) {
-            Character current = toVisit.iterator().next();
-            toVisit.remove(current);
-            reachable.add(current);
-            for (String prod : producciones.getOrDefault(current, Collections.emptySet())) {
-                prod.chars().filter(Character::isUpperCase).forEach(c -> {
-                    if (!reachable.contains((char) c)) {
-                        toVisit.add((char) c);
-                    }
-                });
-            }
         }
+        System.out.println("Símbolos productivos actualizados: " + productive);
+    } while (changed);
 
-        List<Character> removed = new ArrayList<>();
-        Set<Character> toRemove = new HashSet<>(noTerminales);
-        toRemove.removeAll(productive);
-        toRemove.removeAll(reachable);
-        for (Character c : toRemove) {
-            noTerminales.remove(c);
-            producciones.remove(c);
-            removed.add(c);
+    // Detectar símbolos alcanzables
+    Set<Character> toVisit = new HashSet<>();
+    toVisit.add(simboloInicio);
+    while (!toVisit.isEmpty()) {
+        Character current = toVisit.iterator().next();
+        toVisit.remove(current);
+        reachable.add(current);
+        for (String prod : producciones.getOrDefault(current, Collections.emptySet())) {
+            prod.chars().filter(Character::isUpperCase).forEach(c -> {
+                if (!reachable.contains((char) c) && productive.contains(c)) {
+                    toVisit.add((char) c);
+                }
+            });
         }
-        return removed;
+    }
+    System.out.println("Símbolos alcanzables: " + reachable);
+
+    List<Character> removed = new ArrayList<>();
+    Set<Character> toRemove = new HashSet<>(noTerminales);
+    toRemove.removeAll(productive);
+    toRemove.removeAll(reachable);
+    for (Character c : toRemove) {
+        noTerminales.remove(c);
+        producciones.remove(c);
+        removed.add(c);
+    }
+
+    // Aquí eliminamos las producciones que contienen los símbolos eliminados
+    producciones.forEach((key, value) -> value.removeIf(prod -> prod.chars().anyMatch(ch -> toRemove.contains((char) ch))));
+
+    System.out.println("Símbolos eliminados: " + removed);
+    return removed;
 }
 
+
+    public void debugProductions() {
+        System.out.println("Estado actual de las producciones:");
+        for (Map.Entry<Character, Set<String>> entry : producciones.entrySet()) {
+            System.out.println(entry.getKey() + "::=" + String.join("|", entry.getValue()));
+        }
+    }
 
 
 
@@ -602,55 +630,67 @@ private Set<String> generateCombinations(String production, Set<Character> remov
      * @return Devuelve una lista de producciones (un String de la forma "A::=B"
      *         por cada producción), con todas las reglas unitarias eliminadas.
      */
-    public List<String> removeUnitProductions() {
-        List<String> removedUnitProductions = new ArrayList<>();
-        Map<Character, Set<String>> newProductions = new HashMap<>();
+public List<String> removeUnitProductions() {
+    List<String> removedUnitProductions = new ArrayList<>();
+    Map<Character, Set<String>> newProductions = new HashMap<>();
+    Map<Character, Set<Character>> unitChains = new HashMap<>();
 
-    // Inicializar el nuevo mapa de producciones
-        for (Character nonTerminal : producciones.keySet()) {
-            newProductions.put(nonTerminal, new HashSet<>(producciones.get(nonTerminal)));
-        }
-
-    // Encontrar y procesar todas las reglas unitarias
+    // Inicialización de estructuras y primer registro del estado de las producciones
     for (Character nonTerminal : producciones.keySet()) {
-        Queue<Character> queue = new LinkedList<>();
-        Set<Character> visited = new HashSet<>();
-
-        queue.add(nonTerminal);
-        visited.add(nonTerminal);
-
-        while (!queue.isEmpty()) {
-            Character current = queue.poll();
-            for (String production : producciones.getOrDefault(current, Collections.emptySet())) {
-                if (production.length() == 1 && noTerminales.contains(production.charAt(0))) {
-                    // Es una producción unitaria
-                    Character unitTarget = production.charAt(0);
-                    if (!visited.contains(unitTarget)) {
-                        queue.add(unitTarget);
-                        visited.add(unitTarget);
-                    }
-                    removedUnitProductions.add(current + "::=" + production);
-                } else {
-                    // Es una producción regular, añadirla al no terminal original
-                    newProductions.get(nonTerminal).add(production);
-                }
+        newProductions.put(nonTerminal, new HashSet<>());  // Preparar nuevo conjunto de producciones
+        unitChains.put(nonTerminal, new HashSet<>());  // Cadenas de unidades para cada no terminal
+        for (String prod : producciones.get(nonTerminal)) {
+            if (prod.length() == 1 && noTerminales.contains(prod.charAt(0))) {
+                unitChains.get(nonTerminal).add(prod.charAt(0));  // Agregar a la cadena de unidad
+            } else {
+                newProductions.get(nonTerminal).add(prod);  // Agregar producciones no unitarias inicialmente
             }
         }
     }
 
-    // Eliminar las reglas unitarias del mapa de producciones original
-    for (Character nonTerminal : producciones.keySet()) {
-        Set<String> updatedProductions = new HashSet<>(newProductions.get(nonTerminal));
-        updatedProductions.removeIf(prod -> prod.length() == 1 && noTerminales.contains(prod.charAt(0)));
-        newProductions.put(nonTerminal, updatedProductions);
-    }
+    System.out.println("Inicialización de nuevas producciones: " + newProductions);
+    System.out.println("Cadenas unitarias detectadas: " + unitChains);
 
-    // Actualizar el mapa de producciones
+    // Procesamiento de producciones unitarias para propagación
+    boolean changes;
+    do {
+        changes = false;
+        for (Character nonTerminal : new HashSet<>(unitChains.keySet())) {
+            Set<Character> currentChain = unitChains.get(nonTerminal);
+            Set<Character> toAdd = new HashSet<>();
+            for (Character target : new HashSet<>(currentChain)) {
+                if (unitChains.containsKey(target)) {
+                    for (Character expansion : unitChains.get(target)) {
+                        if (!currentChain.contains(expansion) && expansion != nonTerminal) {
+                            toAdd.add(expansion);  // Prevenir ciclos
+                            changes = true;
+                        }
+                    }
+                }
+                // Transferir producciones no unitarias desde el objetivo al origen
+                for (String prod : newProductions.get(target)) {
+                    if (prod.length() != 1 || !noTerminales.contains(prod.charAt(0)) || prod.charAt(0) != nonTerminal) {
+                        newProductions.get(nonTerminal).add(prod);
+                    }
+                }
+            }
+            currentChain.addAll(toAdd);  // Añadir nuevos objetivos unitarios
+        }
+    } while (changes);
+
+    // Registro de cambios después de propagar producciones unitarias
+    System.out.println("Estado final de nuevas producciones: " + newProductions);
+    System.out.println("Estado final de cadenas unitarias: " + unitChains);
+
+    // Actualizar las producciones originales para remover las unitarias completamente
     producciones.clear();
     producciones.putAll(newProductions);
 
     return removedUnitProductions;
-    }
+}
+
+
+
 
 
 
