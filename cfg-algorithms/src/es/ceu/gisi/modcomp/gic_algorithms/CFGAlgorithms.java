@@ -751,27 +751,25 @@ public List<String> removeUnitProductions() {
      */
     public boolean isCNF() {
         for (Map.Entry<Character, Set<String>> entry : producciones.entrySet()) {
-            
-            if (entry.getKey().equals(simboloInicio)) {
-                if (entry.getValue().contains("l") && entry.getValue().size() > 1) {
-                    return false; 
-                }
+        for (String prod : entry.getValue()) {
+            // Ignora la producción lambda específicamente para el símbolo de inicio si hay más producciones
+            if (prod.equals("l") && entry.getKey().equals(simboloInicio)) {
+                continue;
             }
-
-            for (String prod : entry.getValue()) {
-                if (prod.equals("l") && entry.getKey().equals(simboloInicio) && entry.getValue().size() == 1) {
-                    continue;
-                }
-                if (prod.length() == 1 && terminales.contains(prod.charAt(0))) {
-                    continue; 
-                }
-                if (prod.length() == 2 && noTerminales.contains(prod.charAt(0)) && noTerminales.contains(prod.charAt(1))) {
-                    continue; 
-                }
-                return false; 
+            // Verifica si la producción es de un terminal solo
+            if (prod.length() == 1 && terminales.contains(prod.charAt(0))) {
+                continue;
             }
+            // Verifica si la producción consta de dos no terminales
+            if (prod.length() == 2 && noTerminales.contains(prod.charAt(0)) && noTerminales.contains(prod.charAt(1))) {
+                continue;
+            }
+            // Si no cumple las condiciones de CNF, devuelve false
+            return false;
         }
-        return true;
+    }
+    // Si todas las producciones pasan las verificaciones, devuelve true
+    return true;
     }
 
 
