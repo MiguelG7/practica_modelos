@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Collections;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
@@ -427,70 +428,116 @@ public String getProductionsToString(char nonterminal) {
      *         terminales eliminados.
      */
     public List<Character> removeUselessSymbols() {
-    System.out.println("Iniciando removeUselessSymbols...");
+    Set<Character> alcanzables = new HashSet<>();
+    Set<Character> generativos = new HashSet<>();
+    List<Character> eliminados = new ArrayList<>();
 
-    Set<Character> reachable = new HashSet<>();
-    Set<Character> productive = new HashSet<>();
-
-    // Detectar símbolos productivos
-    for (Map.Entry<Character, Set<String>> entry : producciones.entrySet()) {
-        for (String production : entry.getValue()) {
-            if (production.length() == 1 && terminales.contains(production.charAt(0))) {
-                productive.add(entry.getKey());
-            }
-        }
-    }
-    System.out.println("Símbolos productivos iniciales: " + productive);
-
+    // Paso 1: Encontrar símbolos generativos
     boolean changed;
     do {
         changed = false;
-        for (Map.Entry<Character, Set<String>> entry : producciones.entrySet()) {
-            if (!productive.contains(entry.getKey())) {
-                for (String production : entry.getValue()) {
-                    if (production.chars().allMatch(c -> productive.contains((char) c) || terminales.contains((char) c))) {
-                        productive.add(entry.getKey());
-                        changed = true;
+        for (Character nt : noTerminales) {
+            for (String prod : producciones.getOrDefault(nt, new HashSet<>())) {
+                boolean esGenerativo = true;
+                for (char c : prod.toCharArray()) {
+                    if (!terminales.contains(c) && !generativos.contains(c)) {
+                        esGenerativo = false;
                         break;
                     }
                 }
+                if (esGenerativo && generativos.add(nt)) {
+                    changed = true;
+                }
             }
         }
-        System.out.println("Símbolos productivos actualizados: " + productive);
     } while (changed);
 
-    // Detectar símbolos alcanzables
-    Set<Character> toVisit = new HashSet<>();
-    toVisit.add(simboloInicio);
-    while (!toVisit.isEmpty()) {
-        Character current = toVisit.iterator().next();
-        toVisit.remove(current);
-        reachable.add(current);
-        for (String prod : producciones.getOrDefault(current, Collections.emptySet())) {
-            prod.chars().filter(Character::isUpperCase).forEach(c -> {
-                if (!reachable.contains((char) c) && productive.contains(c)) {
-                    toVisit.add((char) c);
+    // Paso 2: Encontrar símbolos alcanzables
+    Queue<Character> porProcesar = new LinkedList<>();
+    alcanzables.add(simboloInicio);
+    porProcesar.add(simboloInicio);
+    while (!porProcesar.isEmpty()) {
+        char actual = porProcesar.poll();
+        for (String prod : producciones.getOrDefault(actual, new HashSet<>())) {
+            for (char c : prod.toCharArray()) {
+                if (noTerminales.contains(c) && alcanzables.add(c)) {
+                    porProcesar.add(c);
                 }
-            });
+            }
         }
     }
-    System.out.println("Símbolos alcanzables: " + reachable);
 
-    List<Character> removed = new ArrayList<>();
-    Set<Character> toRemove = new HashSet<>(noTerminales);
-    toRemove.removeAll(productive);
-    toRemove.removeAll(reachable);
-    for (Character c : toRemove) {
-        noTerminales.remove(c);
-        producciones.remove(c);
-        removed.add(c);
+    // Paso 3: Eliminar símbolos no generativos o no alcanzables
+    for (Character nt : new HashSet<>(noTerminales)) {
+        boolean tieneLambda = producciones.getOrDefault(nt, new HashSet<>()).contains("l");
+        if ((!generativos.contains(nt) || !alcanzables.contains(nt)) && !tieneLambda) {
+            eliminados.add(nt);
+            noTerminales.remove(nt);
+            producciones.remove(nt);
+        } else {
+            System.out.println("No terminal " + nt + " tiene lambda: " + tieneLambda);
+        }
     }
 
-    // Aquí eliminamos las producciones que contienen los símbolos eliminados
-    producciones.forEach((key, value) -> value.removeIf(prod -> prod.chars().anyMatch(ch -> toRemove.contains((char) ch))));
+    for (Character t : new HashSet<>(terminales)) {
+        boolean usado = false;
+        for (Set<String> prods : producciones.values()) {
+            for (String prod : prods) {
+                if (prod.indexOf(t) != -1) {
+                    usado = true;
+                    break;
+                }
+            }
+        }
+        if (!usado) {
+            eliminados.add(t);
+            terminales.remove(t);
+        }
+    }
 
-    System.out.println("Símbolos eliminados: " + removed);
-    return removed;
+
+    // Paso 4: Eliminar símbolos redundantes (los que producen algo que ya se puede producir de otra manera)
+    Map<Character, Set<String>> produccionesSinRedundancias = new HashMap<>(producciones);
+    for (Character nt : new HashSet<>(noTerminales)) {
+        if (!nt.equals(simboloInicio) && esRedundante(nt, simboloInicio)) {
+            eliminados.add(nt);
+            noTerminales.remove(nt);
+            produccionesSinRedundancias.remove(nt);
+            for (Set<String> prods : produccionesSinRedundancias.values()) {
+                prods.removeIf(prod -> prod.indexOf(nt) != -1);
+            }
+        }
+    }
+
+    producciones = produccionesSinRedundancias;
+
+    // Eliminar símbolos de eliminados de las producciones
+    for (Character nt : eliminados) {
+        producciones.values().forEach(prodSet -> prodSet.removeIf(prod -> prod.indexOf(nt) != -1));
+    }
+
+    // Imprimir los símbolos eliminados
+    System.out.println("Símbolos eliminados: " + eliminados);
+
+    return eliminados;
+}
+   
+private boolean esRedundante(char nt1, char nt2) {
+    Set<String> produccionesNt1 = producciones.getOrDefault(nt1, new HashSet<>());
+    Set<String> produccionesNt2 = producciones.getOrDefault(nt2, new HashSet<>());
+
+    // Verificar si las producciones de nt1 están todas contenidas en las de nt2
+    for (String prod : produccionesNt1) {
+        if (!produccionesNt2.contains(prod)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+private boolean tieneProduccionLambda(char nt) {
+    Set<String> produccionesNt = producciones.getOrDefault(nt, Collections.emptySet());
+    return produccionesNt.contains("l");
 }
 
 
